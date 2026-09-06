@@ -5,7 +5,9 @@ import Layout from '../layouts/Layout.astro';
 const result = Astro.getActionResult(actions.auth.login);
 if (result && !result.error) {
   const next = new URL(Astro.request.url).searchParams.get('next');
-  return Astro.redirect(next || '/mijn-uren');
+  // '/' bevat zelf de rol-gebaseerde redirect (admin vs. juf), zodat die
+  // logica niet hier nogmaals moet worden gedupliceerd.
+  return Astro.redirect(next && next.startsWith('/') ? next : '/');
 }
 
 const next = Astro.url.searchParams.get('next') ?? '';

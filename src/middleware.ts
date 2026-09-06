@@ -1,10 +1,23 @@
 import { defineMiddleware } from 'astro:middleware';
+import { getActionContext } from 'astro:actions';
 import { createSupabaseServerClient } from './lib/supabase/server';
 import type { Profile } from './lib/types';
 
 const PUBLIC_PATHS = ['/login', '/wachtwoord-vergeten', '/wachtwoord-resetten'];
 
 export const onRequest = defineMiddleware(async (context, next) => {
+  // Acties met accept:'form' worden pas uitgevoerd op het moment dat de
+  // pagina zelf Astro.getActionResult() aanroept — voor uitloggen willen we
+  // altijd meteen naar /login redirecten, ongeacht welke pagina het formulier
+  // toont, dus voeren we die ene actie hier eagerly uit (het officiële
+  // patroon voor acties afhandelen in middleware).
+  const { action, setActionResult, serializeActionResult } = getActionContext(context);
+  if (action?.calledFrom === 'form' && action.name === 'auth.logout') {
+    const result = await action.handler();
+    setActionResult(action.name, serializeActionResult(result));
+    return context.redirect('/login');
+  }
+
   const supabase = createSupabaseServerClient(context.cookies, context.request);
   context.locals.supabase = supabase;
 

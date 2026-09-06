@@ -167,9 +167,15 @@ create policy "juf ziet eigen uren" on hour_entries
 create policy "juf voegt eigen uren toe" on hour_entries
   for insert with check (profile_id = auth.uid());
 
+-- Zonder expliciete WITH CHECK valt Postgres terug op dezelfde expressie als
+-- USING, wat de eigen concept -> ingediend overgang (bij "Uren indienen")
+-- zou blokkeren omdat de NIEUWE rij dan geen status 'concept' meer heeft.
 create policy "juf bewerkt eigen concept-uren" on hour_entries
   for update using (
     (profile_id = auth.uid() and status = 'concept') or is_admin()
+  )
+  with check (
+    (profile_id = auth.uid() and status in ('concept', 'ingediend')) or is_admin()
   );
 
 create policy "juf verwijdert eigen concept-uren" on hour_entries

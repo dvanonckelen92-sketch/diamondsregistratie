@@ -15,12 +15,22 @@ export function createSupabaseServerClient(cookies: AstroCookies, request: Reque
     {
       cookieOptions,
       cookies: {
+        // Ga via cookies.get() (niet de ruwe request-header) zodat we ook
+        // cookie-mutaties zien die eerder in dit verzoek al gebeurd zijn
+        // (bv. auth.signOut() in een Action, die vóór onze middleware draait
+        // maar op dezelfde AstroCookies-instantie).
         getAll() {
           const header = request.headers.get('cookie') ?? '';
-          return header.split(';').flatMap((pair) => {
-            const [name, ...rest] = pair.trim().split('=');
-            if (!name) return [];
-            return [{ name, value: decodeURIComponent(rest.join('=')) }];
+          const names = new Set(
+            header
+              .split(';')
+              .map((pair) => pair.trim().split('=')[0])
+              .filter(Boolean)
+          );
+          return [...names].flatMap((name) => {
+            const cookie = cookies.get(name);
+            if (cookie === undefined) return [];
+            return [{ name, value: cookie.value }];
           });
         },
         setAll(cookiesToSet) {
