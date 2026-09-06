@@ -1,0 +1,102 @@
+---
+import { actions } from 'astro:actions';
+import AppShell from '../../components/AppShell.astro';
+import type { Category, HourEntry } from '../../lib/types';
+
+const supabase = Astro.locals.supabase;
+const profile = Astro.locals.profile!;
+
+const { data: categories } = await supabase.from('categories').select('*').order('naam');
+
+const editId = Astro.url.searchParams.get('id');
+let entry: HourEntry | null = null;
+if (editId) {
+  const { data } = await supabase.from('hour_entries').select('*').eq('id', editId).single();
+  entry = data;
+}
+
+const isEdit = !!entry;
+const action = isEdit ? actions.hours.update : actions.hours.create;
+const result = Astro.getActionResult(action);
+if (result && !result.error) {
+  return Astro.redirect('/mijn-uren');
+}
+
+const vandaag = new Date().toISOString().slice(0, 10);
+---
+
+<AppShell title={isEdit ? 'Uren bewerken' : 'Uren toevoegen'} profile={profile}>
+  <form method="POST" action={action} class="flex max-w-md flex-col gap-4">
+    {isEdit && <input type="hidden" name="id" value={entry!.id} />}
+
+    <div>
+      <label for="datum" class="mb-1 block text-sm font-medium text-slate-700">Datum</label>
+      <input
+        id="datum"
+        name="datum"
+        type="date"
+        required
+        value={entry?.datum ?? vandaag}
+        class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+      />
+    </div>
+
+    <div>
+      <label for="categoryId" class="mb-1 block text-sm font-medium text-slate-700">Categorie</label>
+      <select
+        id="categoryId"
+        name="categoryId"
+        required
+        class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+      >
+        {(categories as Category[] | null ?? []).map((c) => (
+          <option value={c.id} selected={c.id === entry?.category_id}>
+            {c.naam}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    <div>
+      <label for="aantalUren" class="mb-1 block text-sm font-medium text-slate-700">Aantal uren</label>
+      <input
+        id="aantalUren"
+        name="aantalUren"
+        type="number"
+        step="0.25"
+        min="0.25"
+        required
+        value={entry?.aantal_uren ?? ''}
+        class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+      />
+    </div>
+
+    <div>
+      <label for="opmerking" class="mb-1 block text-sm font-medium text-slate-700">Opmerking (optioneel)</label>
+      <textarea
+        id="opmerking"
+        name="opmerking"
+        rows="2"
+        class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+        >{entry?.opmerking ?? ''}</textarea
+      >
+    </div>
+
+    {result?.error && <p class="text-sm text-red-600">{result.error.message}</p>}
+
+    <div class="flex gap-2">
+      <button
+        type="submit"
+        class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+      >
+        Opslaan
+      </button>
+      <a
+        href="/mijn-uren"
+        class="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+      >
+        Annuleren
+      </a>
+    </div>
+  </form>
+</AppShell>

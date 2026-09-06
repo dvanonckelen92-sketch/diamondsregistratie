@@ -1,0 +1,49 @@
+---
+import AppShell from '../../components/AppShell.astro';
+import AdminEntriesTable, { type AdminEntryRow } from '../../components/AdminEntriesTable';
+import type { Category, HourEntryWithAmount, Profile } from '../../lib/types';
+import { huidigeMaand, maandBereik } from '../../lib/format';
+
+const supabase = Astro.locals.supabase;
+const profile = Astro.locals.profile!;
+
+const maand = Astro.url.searchParams.get('maand') ?? huidigeMaand();
+const { start, eind } = maandBereik(maand);
+
+const [{ data: entries }, { data: profiles }, { data: categories }] = await Promise.all([
+  supabase.from('hour_entries_with_amount').select('*').gte('datum', start).lt('datum', eind),
+  supabase.from('profiles').select('*'),
+  supabase.from('categories').select('*')
+]);
+
+const profileMap = new Map((profiles as Profile[] | null ?? []).map((p) => [p.id, p.naam]));
+const categoryMap = new Map((categories as Category[] | null ?? []).map((c) => [c.id, c.naam]));
+
+const rows: AdminEntryRow[] = ((entries as HourEntryWithAmount[] | null) ?? []).map((e) => ({
+  id: e.id,
+  datum: e.datum,
+  jufNaam: profileMap.get(e.profile_id) ?? 'Onbekend',
+  categorieNaam: categoryMap.get(e.category_id) ?? 'Onbekend',
+  aantalUren: Number(e.aantal_uren),
+  uurloon: Number(e.uurloon),
+  bedrag: Number(e.bedrag),
+  status: e.status,
+  opmerking: e.opmerking
+}));
+---
+
+<AppShell title="Overzicht registraties" profile={profile}>
+  <form method="GET" class="mb-4 flex items-center gap-2">
+    <label for="maand" class="text-sm text-slate-600">Maand</label>
+    <input
+      type="month"
+      id="maand"
+      name="maand"
+      value={maand}
+      onchange="this.form.submit()"
+      class="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+    />
+  </form>
+
+  <AdminEntriesTable client:load initialRows={rows} />
+</AppShell>

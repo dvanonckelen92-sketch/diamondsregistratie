@@ -1,0 +1,110 @@
+---
+import { actions } from 'astro:actions';
+import AppShell from '../../components/AppShell.astro';
+import type { Category, HourEntryWithAmount } from '../../lib/types';
+import { formatEuro, formatDatum, huidigeMaand, maandBereik, STATUS_LABELS, STATUS_STYLES } from '../../lib/format';
+
+const supabase = Astro.locals.supabase;
+const profile = Astro.locals.profile!;
+
+const maand = Astro.url.searchParams.get('maand') ?? huidigeMaand();
+const { start, eind } = maandBereik(maand);
+
+const [{ data: entries }, { data: categories }] = await Promise.all([
+  supabase
+    .from('hour_entries_with_amount')
+    .select('*')
+    .eq('profile_id', profile.id)
+    .gte('datum', start)
+    .lt('datum', eind)
+    .order('datum', { ascending: false }),
+  supabase.from('categories').select('*').order('naam')
+]);
+
+const categoryMap = new Map((categories as Category[] | null ?? []).map((c) => [c.id, c.naam]));
+const rows = (entries as HourEntryWithAmount[] | null) ?? [];
+const heeftConcepten = rows.some((r) => r.status === 'concept');
+
+const submitResult = Astro.getActionResult(actions.hours.submitMonth);
+const deleteResult = Astro.getActionResult(actions.hours.delete);
+---
+
+<AppShell title="Mijn uren" profile={profile}>
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <form method="GET" class="flex items-center gap-2">
+      <label for="maand" class="text-sm text-slate-600">Maand</label>
+      <input
+        type="month"
+        id="maand"
+        name="maand"
+        value={maand}
+        onchange="this.form.submit()"
+        class="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+      />
+    </form>
+    <div class="flex gap-2">
+      <a
+        href="/mijn-uren/nieuw"
+        class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800"
+      >
+        Uren toevoegen
+      </a>
+      <form method="POST" action={actions.hours.submitMonth}>
+        <input type="hidden" name="maand" value={maand} />
+        <button
+          type="submit"
+          disabled={!heeftConcepten}
+          class="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 enabled:hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Uren indienen
+        </button>
+      </form>
+    </div>
+  </div>
+
+  {submitResult?.error && <p class="mb-4 text-sm text-red-600">{submitResult.error.message}</p>}
+  {deleteResult?.error && <p class="mb-4 text-sm text-red-600">{deleteResult.error.message}</p>}
+
+  {
+    rows.length === 0 ? (
+      <p class="rounded-md border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
+        Geen registraties deze maand.
+      </p>
+    ) : (
+      <div class="flex flex-col gap-2">
+        {rows.map((entry) => (
+          <div class="flex flex-col gap-1 rounded-lg border border-slate-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-medium">{formatDatum(entry.datum)}</span>
+                <span class={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[entry.status]}`}>
+                  {STATUS_LABELS[entry.status]}
+                </span>
+              </div>
+              <div class="text-sm text-slate-500">
+                {categoryMap.get(entry.category_id) ?? 'Onbekende categorie'} · {entry.aantal_uren} u
+                {entry.opmerking ? ` · ${entry.opmerking}` : ''}
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-sm font-medium">{formatEuro(entry.bedrag)}</span>
+              {entry.status === 'concept' && (
+                <>
+                  <a href={`/mijn-uren/nieuw?id=${entry.id}`} class="text-sm text-slate-500 hover:text-slate-900">
+                    Bewerken
+                  </a>
+                  <form method="POST" action={actions.hours.delete}>
+                    <input type="hidden" name="id" value={entry.id} />
+                    <button type="submit" class="text-sm text-red-500 hover:text-red-700">
+                      Verwijderen
+                    </button>
+                  </form>
+                </>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+</AppShell>

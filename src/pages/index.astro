@@ -1,0 +1,4 @@
+---
+const profile = Astro.locals.profile;
+return Astro.redirect(profile?.rol === 'admin' ? '/admin/overzicht' : '/mijn-uren');
+---
