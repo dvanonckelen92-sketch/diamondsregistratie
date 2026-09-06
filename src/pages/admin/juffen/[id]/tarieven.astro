@@ -2,7 +2,6 @@
 import { actions } from 'astro:actions';
 import AppShell from '../../../../components/AppShell.astro';
 import type { Category, Profile, Rate } from '../../../../lib/types';
-import { formatDatum, formatEuro } from '../../../../lib/format';
 
 const supabase = Astro.locals.supabase;
 const profile = Astro.locals.profile!;
@@ -34,87 +33,82 @@ for (const r of ratesList) {
     huidigPerCategorie.set(r.category_id, r);
   }
 }
+
+// Een categorie die al een tarief heeft, hernoem je via de tabel hieronder
+// in plaats van ze hier nogmaals toe te voegen.
+const categorieenMetTarief = new Set(ratesList.map((r) => r.category_id));
+const beschikbareCategorieen = categoryList.filter((c) => !categorieenMetTarief.has(c.id));
 ---
 
 <AppShell title={`Tarieven · ${(juf as Profile).naam}`} profile={profile}>
-  <div class="mb-6 rounded-lg border border-slate-200 bg-white p-4">
-    <h2 class="mb-3 text-sm font-semibold text-slate-700">Nieuw tarief toevoegen</h2>
-    <form method="POST" action={actions.admin.createRate} class="flex flex-wrap items-end gap-3">
-      <input type="hidden" name="profileId" value={id} />
-      <div>
-        <label for="categoryId" class="mb-1 block text-sm font-medium text-slate-700">Categorie</label>
-        <select
-          id="categoryId"
-          name="categoryId"
-          required
-          class="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-gold focus:outline-none"
-        >
-          {(categories as Category[] | null ?? []).map((c) => (
-            <option value={c.id}>{c.naam}</option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label for="uurloon" class="mb-1 block text-sm font-medium text-slate-700">Uurloon (€)</label>
-        <input
-          id="uurloon"
-          name="uurloon"
-          type="number"
-          step="0.01"
-          min="0"
-          required
-          class="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-gold focus:outline-none"
-        />
-      </div>
-      <div>
-        <label for="geldigVanaf" class="mb-1 block text-sm font-medium text-slate-700">Geldig vanaf</label>
-        <input
-          id="geldigVanaf"
-          name="geldigVanaf"
-          type="date"
-          required
-          value={vandaag}
-          class="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-gold focus:outline-none"
-        />
-      </div>
-      <button
-        type="submit"
-        class="rounded-md bg-brand-red px-4 py-2 text-sm font-medium text-white hover:bg-brand-red-dark"
-      >
-        Toevoegen
-      </button>
-    </form>
-    {createResult?.error && <p class="mt-2 text-sm text-red-600">{createResult.error.message}</p>}
-  </div>
-
-  <h2 class="mb-2 text-sm font-semibold text-slate-700">Huidige tarieven</h2>
-  <div class="mb-6 overflow-hidden rounded-lg border border-slate-200 bg-white">
-    {
-      categoryList.map((c) => {
-        const huidig = huidigPerCategorie.get(c.id);
-        return (
-          <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3 last:border-b-0">
-            <span class="text-sm font-medium">{c.naam}</span>
-            {huidig ? (
-              <span class="text-sm">
-                <span class="font-semibold text-brand-gold-dark">{formatEuro(Number(huidig.uurloon))}</span>
-                <span class="text-slate-400"> · sinds {formatDatum(huidig.geldig_vanaf)}</span>
-              </span>
-            ) : (
-              <span class="text-sm text-slate-400">Nog geen tarief ingesteld</span>
-            )}
+  {
+    beschikbareCategorieen.length > 0 && (
+      <div class="mb-6 rounded-lg border border-slate-200 bg-white p-4">
+        <h2 class="mb-3 text-sm font-semibold text-slate-700">Nieuw tarief toevoegen</h2>
+        <form method="POST" action={actions.admin.createRate} class="flex flex-wrap items-end gap-3">
+          <input type="hidden" name="profileId" value={id} />
+          <div>
+            <label for="categoryId" class="mb-1 block text-sm font-medium text-slate-700">
+              Categorie
+            </label>
+            <select
+              id="categoryId"
+              name="categoryId"
+              required
+              class="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-gold focus:outline-none"
+            >
+              {beschikbareCategorieen.map((c) => (
+                <option value={c.id}>{c.naam}</option>
+              ))}
+            </select>
           </div>
-        );
-      })
-    }
-    {
-      categoryList.length === 0 && (
-        <p class="px-4 py-6 text-center text-sm text-slate-500">Nog geen categorieën aangemaakt.</p>
-      )
-    }
-  </div>
+          <div>
+            <label for="uurloon" class="mb-1 block text-sm font-medium text-slate-700">
+              Uurloon (€)
+            </label>
+            <input
+              id="uurloon"
+              name="uurloon"
+              type="number"
+              step="0.01"
+              min="0"
+              required
+              class="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-gold focus:outline-none"
+            />
+          </div>
+          <div>
+            <label for="geldigVanaf" class="mb-1 block text-sm font-medium text-slate-700">
+              Geldig vanaf
+            </label>
+            <input
+              id="geldigVanaf"
+              name="geldigVanaf"
+              type="date"
+              required
+              value={vandaag}
+              class="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-gold focus:outline-none"
+            />
+          </div>
+          <button
+            type="submit"
+            class="rounded-md bg-brand-red px-4 py-2 text-sm font-medium text-white hover:bg-brand-red-dark"
+          >
+            Toevoegen
+          </button>
+        </form>
+        {createResult?.error && <p class="mt-2 text-sm text-red-600">{createResult.error.message}</p>}
+      </div>
+    )
+  }
+  {
+    beschikbareCategorieen.length === 0 && categoryList.length > 0 && (
+      <p class="mb-6 text-sm text-slate-500">
+        Elke categorie heeft al een tarief — pas het aan in de tabel hieronder.
+      </p>
+    )
+  }
 
-  <h2 class="mb-2 text-sm font-semibold text-slate-700">Geschiedenis</h2>
+  <h2 class="mb-2 text-sm font-semibold text-slate-700">Tarieven</h2>
   {updateResult?.error && <p class="mb-2 text-sm text-red-600">{updateResult.error.message}</p>}
   {deleteResult?.error && <p class="mb-2 text-sm text-red-600">{deleteResult.error.message}</p>}
   <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
