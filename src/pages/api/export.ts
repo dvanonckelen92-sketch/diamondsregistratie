@@ -60,8 +60,8 @@ export const GET: APIRoute = async ({ locals, url }) => {
       datum: e.datum,
       categorie: categoryMap.get(e.category_id) ?? 'Onbekend',
       uren: Number(e.aantal_uren),
-      uurloon: Number(e.uurloon),
-      bedrag: Number(e.bedrag),
+      uurloon: e.uurloon === null ? 'Geen tarief' : Number(e.uurloon),
+      bedrag: e.bedrag === null ? 'Geen tarief' : Number(e.bedrag),
       status: e.status
     });
   }

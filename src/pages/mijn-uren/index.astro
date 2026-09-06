@@ -87,7 +87,13 @@ const deleteResult = Astro.getActionResult(actions.hours.delete);
               </div>
             </div>
             <div class="flex items-center gap-3">
-              <span class="text-sm font-medium">{formatEuro(entry.bedrag)}</span>
+              {entry.bedrag !== null ? (
+                <span class="text-sm font-medium">{formatEuro(entry.bedrag)}</span>
+              ) : (
+                <span class="text-sm text-amber-600" title="Er is nog geen tarief ingesteld voor deze categorie">
+                  Geen tarief
+                </span>
+              )}
               {entry.status === 'concept' && (
                 <>
                   <a href={`/mijn-uren/nieuw?id=${entry.id}`} class="text-sm text-slate-500 hover:text-slate-900">

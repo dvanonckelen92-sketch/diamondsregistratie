@@ -25,8 +25,8 @@ const rows: AdminEntryRow[] = ((entries as HourEntryWithAmount[] | null) ?? []).
   jufNaam: profileMap.get(e.profile_id) ?? 'Onbekend',
   categorieNaam: categoryMap.get(e.category_id) ?? 'Onbekend',
   aantalUren: Number(e.aantal_uren),
-  uurloon: Number(e.uurloon),
-  bedrag: Number(e.bedrag),
+  uurloon: e.uurloon === null ? null : Number(e.uurloon),
+  bedrag: e.bedrag === null ? null : Number(e.bedrag),
   status: e.status,
   opmerking: e.opmerking
 }));

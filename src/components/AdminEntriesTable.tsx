@@ -16,8 +16,9 @@ export interface AdminEntryRow {
   jufNaam: string;
   categorieNaam: string;
   aantalUren: number;
-  uurloon: number;
-  bedrag: number;
+  // NULL wanneer er nog geen tarief bestaat voor deze juf + categorie.
+  uurloon: number | null;
+  bedrag: number | null;
   status: 'concept' | 'ingediend' | 'goedgekeurd' | 'betaald';
   opmerking: string | null;
 }
@@ -99,8 +100,20 @@ export default function AdminEntriesTable({ initialRows }: { initialRows: AdminE
       columnHelper.accessor('jufNaam', { header: 'Juf' }),
       columnHelper.accessor('categorieNaam', { header: 'Categorie' }),
       columnHelper.accessor('aantalUren', { header: 'Uren', cell: (info) => info.getValue().toFixed(2) }),
-      columnHelper.accessor('uurloon', { header: 'Uurloon', cell: (info) => euro.format(info.getValue()) }),
-      columnHelper.accessor('bedrag', { header: 'Bedrag', cell: (info) => euro.format(info.getValue()) }),
+      columnHelper.accessor('uurloon', {
+        header: 'Uurloon',
+        cell: (info) => {
+          const value = info.getValue();
+          return value === null ? <span className="text-amber-600">Geen tarief</span> : euro.format(value);
+        }
+      }),
+      columnHelper.accessor('bedrag', {
+        header: 'Bedrag',
+        cell: (info) => {
+          const value = info.getValue();
+          return value === null ? <span className="text-amber-600">Geen tarief</span> : euro.format(value);
+        }
+      }),
       columnHelper.accessor('status', {
         header: 'Status',
         cell: (info) => (

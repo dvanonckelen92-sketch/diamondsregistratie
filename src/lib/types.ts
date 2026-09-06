@@ -40,8 +40,10 @@ export interface HourEntry {
 }
 
 export interface HourEntryWithAmount extends HourEntry {
-  uurloon: number;
-  bedrag: number;
+  // NULL wanneer er (nog) geen tarief bestaat voor deze combinatie van
+  // juf + categorie op de registratiedatum.
+  uurloon: number | null;
+  bedrag: number | null;
 }
 
 export interface ExtraPayment {

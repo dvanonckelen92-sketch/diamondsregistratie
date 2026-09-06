@@ -105,15 +105,21 @@ create trigger on_auth_user_created
 
 -- security_invoker: RLS-policies van hour_entries/rates worden gecontroleerd
 -- op basis van de aanroepende gebruiker, niet van de view-eigenaar.
+--
+-- LEFT JOIN LATERAL (niet gewoon JOIN): als er nog geen tarief bestaat voor
+-- deze combinatie van juf + categorie (bv. een categorie waarvoor de admin
+-- nog geen uurloon heeft ingesteld), moet de registratie toch zichtbaar
+-- blijven — met uurloon/bedrag NULL — in plaats van stilletjes te verdwijnen
+-- uit elke pagina die deze view gebruikt.
 create view hour_entries_with_amount
   with (security_invoker = true)
 as
 select
   he.*,
   r.uurloon,
-  he.aantal_uren * r.uurloon as bedrag
+  case when r.uurloon is not null then he.aantal_uren * r.uurloon else null end as bedrag
 from hour_entries he
-join lateral (
+left join lateral (
   select uurloon
   from rates
   where rates.profile_id = he.profile_id
