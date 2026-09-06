@@ -6,7 +6,10 @@ import type { Category, HourEntry } from '../../lib/types';
 const supabase = Astro.locals.supabase;
 const profile = Astro.locals.profile!;
 
-const { data: categories } = await supabase.from('categories').select('*').order('naam');
+const [{ data: categories }, { data: rates }] = await Promise.all([
+  supabase.from('categories').select('*').order('naam'),
+  supabase.from('rates').select('category_id').eq('profile_id', profile.id)
+]);
 
 const editId = Astro.url.searchParams.get('id');
 let entry: HourEntry | null = null;
@@ -22,10 +25,26 @@ if (result && !result.error) {
   return Astro.redirect('/mijn-uren');
 }
 
+// Enkel categorieën tonen waarvoor de admin al een tarief heeft ingesteld
+// voor deze juf — anders kan ze uren ingeven die nergens meetellen. Bij het
+// bewerken van een bestaande registratie blijft haar huidige categorie wel
+// gewoon in de lijst staan, ook al zou het tarief er ondertussen af zijn.
+const categorieenMetTarief = new Set((rates ?? []).map((r) => r.category_id));
+const beschikbareCategorieen = (categories as Category[] | null ?? []).filter(
+  (c) => categorieenMetTarief.has(c.id) || c.id === entry?.category_id
+);
+
 const vandaag = new Date().toISOString().slice(0, 10);
 ---
 
 <AppShell title={isEdit ? 'Uren bewerken' : 'Uren toevoegen'} profile={profile}>
+  {
+    beschikbareCategorieen.length === 0 ? (
+      <p class="max-w-md rounded-md border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
+        Er is nog geen tarief voor jou ingesteld. Vraag de beheerder om eerst een tarief te koppelen aan een
+        categorie voor je uren kan ingeven.
+      </p>
+    ) : (
   <form method="POST" action={action} class="flex max-w-md flex-col gap-4">
     {isEdit && <input type="hidden" name="id" value={entry!.id} />}
 
@@ -49,7 +68,7 @@ const vandaag = new Date().toISOString().slice(0, 10);
         required
         class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-gold focus:outline-none"
       >
-        {(categories as Category[] | null ?? []).map((c) => (
+        {beschikbareCategorieen.map((c) => (
           <option value={c.id} selected={c.id === entry?.category_id}>
             {c.naam}
           </option>
@@ -99,4 +118,6 @@ const vandaag = new Date().toISOString().slice(0, 10);
       </a>
     </div>
   </form>
+    )
+  }
 </AppShell>
