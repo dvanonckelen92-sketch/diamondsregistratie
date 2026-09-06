@@ -65,3 +65,27 @@ if (result && !result.error) {
     </div>
   </div>
 </Layout>
+
+<script>
+  // Uitnodigings- en reset-links van Supabase leveren de sessie via het
+  // URL-fragment (#access_token=...&refresh_token=...), niet als ?code=.
+  // Een fragment wordt nooit naar de server gestuurd, dus dit moet
+  // client-side afgehandeld worden: sessie zetten (komt terecht in
+  // dezelfde cookies die de server leest), dan herladen zonder fragment.
+  import { createSupabaseBrowserClient } from '../lib/supabase/browser';
+
+  const hash = window.location.hash;
+  if (hash.includes('access_token')) {
+    const params = new URLSearchParams(hash.slice(1));
+    const access_token = params.get('access_token');
+    const refresh_token = params.get('refresh_token');
+    if (access_token && refresh_token) {
+      const supabase = createSupabaseBrowserClient();
+      supabase.auth.setSession({ access_token, refresh_token }).then(({ error }) => {
+        if (!error) {
+          window.location.replace(window.location.pathname);
+        }
+      });
+    }
+  }
+</script>
