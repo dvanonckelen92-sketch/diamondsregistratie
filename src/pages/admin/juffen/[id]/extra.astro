@@ -102,7 +102,10 @@ const vandaag = new Date().toISOString().slice(0, 10);
                 {e.status !== 'betaald' && (
                   <form method="POST" action={actions.admin.markExtraPaid}>
                     <input type="hidden" name="ids" value={e.id} />
-                    <button type="submit" class="text-sm text-slate-600 hover:text-slate-900">
+                    <button
+                      type="submit"
+                      class="rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-600 hover:border-brand-gold hover:text-brand-gold-dark"
+                    >
                       Markeer betaald
                     </button>
                   </form>
