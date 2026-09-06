@@ -37,7 +37,7 @@ const vandaag = new Date().toISOString().slice(0, 10);
         type="date"
         required
         value={entry?.datum ?? vandaag}
-        class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+        class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-gold focus:outline-none"
       />
     </div>
 
@@ -47,7 +47,7 @@ const vandaag = new Date().toISOString().slice(0, 10);
         id="categoryId"
         name="categoryId"
         required
-        class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+        class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-gold focus:outline-none"
       >
         {(categories as Category[] | null ?? []).map((c) => (
           <option value={c.id} selected={c.id === entry?.category_id}>
@@ -67,7 +67,7 @@ const vandaag = new Date().toISOString().slice(0, 10);
         min="0.25"
         required
         value={entry?.aantal_uren ?? ''}
-        class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+        class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-gold focus:outline-none"
       />
     </div>
 
@@ -77,7 +77,7 @@ const vandaag = new Date().toISOString().slice(0, 10);
         id="opmerking"
         name="opmerking"
         rows="2"
-        class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+        class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-gold focus:outline-none"
         >{entry?.opmerking ?? ''}</textarea
       >
     </div>
@@ -87,7 +87,7 @@ const vandaag = new Date().toISOString().slice(0, 10);
     <div class="flex gap-2">
       <button
         type="submit"
-        class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+        class="rounded-md bg-brand-red px-4 py-2 text-sm font-medium text-white hover:bg-brand-red-dark"
       >
         Opslaan
       </button>

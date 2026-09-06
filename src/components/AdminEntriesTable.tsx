@@ -186,7 +186,7 @@ export default function AdminEntriesTable({ initialRows }: { initialRows: AdminE
             type="button"
             disabled={selected.size === 0 || busy}
             onClick={() => runBulkAction('approve')}
-            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 enabled:hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-md border border-brand-gold px-3 py-1.5 text-sm font-medium text-brand-gold-dark enabled:hover:bg-brand-gold-light disabled:cursor-not-allowed disabled:opacity-40"
           >
             Goedkeuren ({selected.size})
           </button>
@@ -194,7 +194,7 @@ export default function AdminEntriesTable({ initialRows }: { initialRows: AdminE
             type="button"
             disabled={selected.size === 0 || busy}
             onClick={() => runBulkAction('paid')}
-            className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white enabled:hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-md bg-brand-red px-3 py-1.5 text-sm font-medium text-white enabled:hover:bg-brand-red-dark disabled:cursor-not-allowed disabled:opacity-40"
           >
             Markeer betaald ({selected.size})
           </button>

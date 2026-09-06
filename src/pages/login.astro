@@ -14,10 +14,13 @@ const next = Astro.url.searchParams.get('next') ?? '';
 ---
 
 <Layout title="Inloggen">
-  <div class="flex min-h-screen items-center justify-center px-4">
-    <div class="w-full max-w-sm rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+  <div class="flex min-h-screen flex-col items-center justify-center px-4">
+    <p class="mb-6 text-center text-2xl font-bold uppercase tracking-wide text-brand-black">
+      Dansschool <span class="text-brand-gold">Diamonds</span>
+    </p>
+    <div class="w-full max-w-sm rounded-lg border border-t-4 border-slate-200 border-t-brand-gold bg-white p-6 shadow-sm">
       <h1 class="mb-1 text-xl font-semibold">Inloggen</h1>
-      <p class="mb-6 text-sm text-slate-500">Uurregistratie dansschool</p>
+      <p class="mb-6 text-sm text-slate-500">Uurregistratie</p>
 
       <form method="POST" action={actions.auth.login} class="flex flex-col gap-4">
         <input type="hidden" name="next" value={next} />
@@ -29,7 +32,7 @@ const next = Astro.url.searchParams.get('next') ?? '';
             type="email"
             required
             autocomplete="email"
-            class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+            class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-gold focus:outline-none"
           />
         </div>
         <div>
@@ -40,7 +43,7 @@ const next = Astro.url.searchParams.get('next') ?? '';
             type="password"
             required
             autocomplete="current-password"
-            class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+            class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-gold focus:outline-none"
           />
         </div>
 
@@ -52,7 +55,7 @@ const next = Astro.url.searchParams.get('next') ?? '';
 
         <button
           type="submit"
-          class="mt-2 rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+          class="mt-2 rounded-md bg-brand-red px-4 py-2 text-sm font-medium text-white hover:bg-brand-red-dark"
         >
           Inloggen
         </button>

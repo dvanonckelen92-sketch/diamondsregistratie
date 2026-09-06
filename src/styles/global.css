@@ -1,1 +1,11 @@
 @import "tailwindcss";
+
+/* Huisstijl Dansschool Diamonds: rood, zwart, wit, goud */
+@theme {
+  --color-brand-gold: #b8935e;
+  --color-brand-gold-dark: #93744a;
+  --color-brand-gold-light: #f2e9db;
+  --color-brand-red: #a6192e;
+  --color-brand-red-dark: #7d1322;
+  --color-brand-black: #1a1a1a;
+}
