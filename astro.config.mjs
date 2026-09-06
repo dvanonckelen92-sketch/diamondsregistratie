@@ -24,5 +24,17 @@ export default defineConfig({
     }
   },
 
-  adapter: netlify()
+  adapter: netlify({
+    // We gebruiken geen Netlify Edge Functions. De lokale emulatie ervoor
+    // (astro dev) downloadt en spawnt een Deno-binary die op dit systeem
+    // "--allow-scripts" niet accepteert en crasht (Deno-versie-mismatch in
+    // @netlify/edge-bundler) — dat had niets met onze app te maken, maar
+    // liet de hele dev-server crashen. Uitschakelen is veilig: de app draait
+    // volledig als een Netlify Function/SSR, niet als edge middleware.
+    devFeatures: {
+      edgeFunctions: false,
+      images: true,
+      environmentVariables: false
+    }
+  })
 });
