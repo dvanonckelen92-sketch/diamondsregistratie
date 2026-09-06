@@ -52,7 +52,7 @@ const result = Astro.getActionResult(actions.admin.createJuf);
         <tr>
           <th class="px-3 py-2">Naam</th>
           <th class="px-3 py-2">E-mail</th>
-          <th class="px-3 py-2"></th>
+          <th class="px-3 py-2 text-right">Acties</th>
         </tr>
       </thead>
       <tbody>
@@ -62,12 +62,20 @@ const result = Astro.getActionResult(actions.admin.createJuf);
               <td class="px-3 py-2">{j.naam}</td>
               <td class="px-3 py-2">{j.email}</td>
               <td class="px-3 py-2">
-                <a href={`/admin/juffen/${j.id}/tarieven`} class="mr-3 text-slate-600 hover:text-slate-900">
-                  Tarieven
-                </a>
-                <a href={`/admin/juffen/${j.id}/extra`} class="text-slate-600 hover:text-slate-900">
-                  Extra vergoedingen
-                </a>
+                <div class="flex justify-end gap-2">
+                  <a
+                    href={`/admin/juffen/${j.id}/tarieven`}
+                    class="rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-600 hover:border-brand-gold hover:text-brand-gold-dark"
+                  >
+                    Tarieven
+                  </a>
+                  <a
+                    href={`/admin/juffen/${j.id}/extra`}
+                    class="rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-600 hover:border-brand-gold hover:text-brand-gold-dark"
+                  >
+                    Extra vergoedingen
+                  </a>
+                </div>
               </td>
             </tr>
           ))

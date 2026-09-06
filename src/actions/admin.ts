@@ -119,6 +119,35 @@ export const admin = {
     }
   }),
 
+  updateRate: defineAction({
+    accept: 'form',
+    input: z.object({
+      id: z.string().uuid(),
+      uurloon: z.coerce.number().nonnegative(),
+      geldigVanaf: z.string()
+    }),
+    handler: async ({ id, uurloon, geldigVanaf }, context) => {
+      requireAdmin(context);
+      const { error } = await context.locals.supabase
+        .from('rates')
+        .update({ uurloon, geldig_vanaf: geldigVanaf })
+        .eq('id', id);
+      if (error) throw new ActionError({ code: 'BAD_REQUEST', message: error.message });
+      return { success: true };
+    }
+  }),
+
+  deleteRate: defineAction({
+    accept: 'form',
+    input: z.object({ id: z.string().uuid() }),
+    handler: async ({ id }, context) => {
+      requireAdmin(context);
+      const { error } = await context.locals.supabase.from('rates').delete().eq('id', id);
+      if (error) throw new ActionError({ code: 'BAD_REQUEST', message: error.message });
+      return { success: true };
+    }
+  }),
+
   createExtraPayment: defineAction({
     accept: 'form',
     input: z.object({
