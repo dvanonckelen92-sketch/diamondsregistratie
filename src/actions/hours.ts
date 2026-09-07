@@ -8,22 +8,37 @@ function requireUser(context: { locals: App.Locals }) {
   return context.locals.user;
 }
 
+const urenKwartierInput = {
+  uren: z.coerce.number().int().min(0),
+  minuten: z.coerce.number().int().refine((v) => [0, 15, 30, 45].includes(v), {
+    message: 'Minuten moet 0, 15, 30 of 45 zijn.'
+  })
+};
+
+function naarDecimaalUren(uren: number, minuten: number): number {
+  const totaal = uren + minuten / 60;
+  if (totaal <= 0) {
+    throw new ActionError({ code: 'BAD_REQUEST', message: 'Vul een aantal uren in groter dan 0.' });
+  }
+  return totaal;
+}
+
 export const hours = {
   create: defineAction({
     accept: 'form',
     input: z.object({
       datum: z.string(),
       categoryId: z.string().uuid(),
-      aantalUren: z.coerce.number().positive(),
+      ...urenKwartierInput,
       opmerking: z.string().optional()
     }),
-    handler: async ({ datum, categoryId, aantalUren, opmerking }, context) => {
+    handler: async ({ datum, categoryId, uren, minuten, opmerking }, context) => {
       const user = requireUser(context);
       const { error } = await context.locals.supabase.from('hour_entries').insert({
         profile_id: user.id,
         category_id: categoryId,
         datum,
-        aantal_uren: aantalUren,
+        aantal_uren: naarDecimaalUren(uren, minuten),
         opmerking: opmerking || null
       });
       if (error) throw new ActionError({ code: 'BAD_REQUEST', message: error.message });
@@ -37,17 +52,17 @@ export const hours = {
       id: z.string().uuid(),
       datum: z.string(),
       categoryId: z.string().uuid(),
-      aantalUren: z.coerce.number().positive(),
+      ...urenKwartierInput,
       opmerking: z.string().optional()
     }),
-    handler: async ({ id, datum, categoryId, aantalUren, opmerking }, context) => {
+    handler: async ({ id, datum, categoryId, uren, minuten, opmerking }, context) => {
       requireUser(context);
       const { error } = await context.locals.supabase
         .from('hour_entries')
         .update({
           category_id: categoryId,
           datum,
-          aantal_uren: aantalUren,
+          aantal_uren: naarDecimaalUren(uren, minuten),
           opmerking: opmerking || null
         })
         .eq('id', id);

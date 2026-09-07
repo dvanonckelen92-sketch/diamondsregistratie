@@ -4,6 +4,13 @@ export function formatEuro(bedrag: number): string {
   return new Intl.NumberFormat('nl-BE', { style: 'currency', currency: 'EUR' }).format(bedrag);
 }
 
+export function formatUren(uren: number): string {
+  const totaalMinuten = Math.round(uren * 60);
+  const h = Math.floor(totaalMinuten / 60);
+  const m = totaalMinuten % 60;
+  return m === 0 ? `${h}u` : `${h}u${String(m).padStart(2, '0')}`;
+}
+
 export function formatDatum(datum: string): string {
   return new Intl.DateTimeFormat('nl-BE', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(
     new Date(datum + 'T00:00:00')

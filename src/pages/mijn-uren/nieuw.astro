@@ -35,6 +35,19 @@ const beschikbareCategorieen = (categories as Category[] | null ?? []).filter(
 );
 
 const vandaag = new Date().toISOString().slice(0, 10);
+
+const kwartierOpties = [0, 15, 30, 45] as const;
+function naarUrenEnMinuten(aantalUren: number | undefined): { uren: number; minuten: number } {
+  if (!aantalUren) return { uren: 0, minuten: 0 };
+  const totaalMinuten = Math.round(aantalUren * 60);
+  const uren = Math.floor(totaalMinuten / 60);
+  const minuten = totaalMinuten % 60;
+  // Rond af naar het dichtstbijzijnde kwartier voor het geval oudere data niet exact op een kwartier valt.
+  const afgerondeMinuten = (Math.round(minuten / 15) * 15) % 60;
+  return { uren, minuten: afgerondeMinuten };
+}
+const { uren: hurenWaarde, minuten: minutenWaarde } = naarUrenEnMinuten(entry?.aantal_uren);
+const hurenWaardeVeld = isEdit ? hurenWaarde : '';
 ---
 
 <AppShell title={isEdit ? 'Uren bewerken' : 'Uren toevoegen'} profile={profile}>
@@ -77,17 +90,37 @@ const vandaag = new Date().toISOString().slice(0, 10);
     </div>
 
     <div>
-      <label for="aantalUren" class="mb-1 block text-sm font-medium text-slate-700">Aantal uren</label>
-      <input
-        id="aantalUren"
-        name="aantalUren"
-        type="number"
-        step="0.25"
-        min="0.25"
-        required
-        value={entry?.aantal_uren ?? ''}
-        class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-gold focus:outline-none"
-      />
+      <label class="mb-1 block text-sm font-medium text-slate-700">Aantal uren</label>
+      <div class="flex gap-2">
+        <div class="flex-1">
+          <input
+            id="uren"
+            name="uren"
+            type="number"
+            step="1"
+            min="0"
+            required
+            value={hurenWaardeVeld}
+            aria-label="Uren"
+            class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-gold focus:outline-none"
+          />
+          <span class="mt-1 block text-xs text-slate-500">uur</span>
+        </div>
+        <div class="flex-1">
+          <select
+            id="minuten"
+            name="minuten"
+            aria-label="Minuten"
+            class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-gold focus:outline-none"
+          >
+            {kwartierOpties.map((m) => (
+              <option value={m} selected={m === minutenWaarde}>
+                {m} min
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
     </div>
 
     <div>

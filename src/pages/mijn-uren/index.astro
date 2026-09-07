@@ -2,7 +2,15 @@
 import { actions } from 'astro:actions';
 import AppShell from '../../components/AppShell.astro';
 import type { Category, HourEntryWithAmount } from '../../lib/types';
-import { formatEuro, formatDatum, huidigeMaand, maandBereik, STATUS_LABELS, STATUS_STYLES } from '../../lib/format';
+import {
+  formatEuro,
+  formatDatum,
+  formatUren,
+  huidigeMaand,
+  maandBereik,
+  STATUS_LABELS,
+  STATUS_STYLES
+} from '../../lib/format';
 
 const supabase = Astro.locals.supabase;
 const profile = Astro.locals.profile!;
@@ -82,7 +90,7 @@ const deleteResult = Astro.getActionResult(actions.hours.delete);
                 </span>
               </div>
               <div class="text-sm text-slate-500">
-                {categoryMap.get(entry.category_id) ?? 'Onbekende categorie'} · {entry.aantal_uren} u
+                {categoryMap.get(entry.category_id) ?? 'Onbekende categorie'} · {formatUren(entry.aantal_uren)}
                 {entry.opmerking ? ` · ${entry.opmerking}` : ''}
               </div>
             </div>
