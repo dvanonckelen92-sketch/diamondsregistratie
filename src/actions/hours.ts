@@ -94,14 +94,22 @@ export const hours = {
       const [jaar, m] = maand.split('-').map(Number);
       const eind = new Date(Date.UTC(jaar, m, 1)).toISOString().slice(0, 10);
 
-      const { error } = await context.locals.supabase
+      const { data: bijgewerkt, error } = await context.locals.supabase
         .from('hour_entries')
         .update({ status: 'ingediend' })
         .eq('profile_id', user.id)
         .eq('status', 'concept')
         .gte('datum', start)
-        .lt('datum', eind);
+        .lt('datum', eind)
+        .select('id');
       if (error) throw new ActionError({ code: 'BAD_REQUEST', message: error.message });
+
+      // Enkel bij een effectieve indiening mag de opmerking (opnieuw) worden vastgelegd —
+      // anders zou iemand de opmerking van een reeds ingediende maand alsnog kunnen
+      // wijzigen door de actie manueel opnieuw aan te roepen nadat de knop al disabled is.
+      if (bijgewerkt.length === 0) {
+        throw new ActionError({ code: 'BAD_REQUEST', message: 'Er zijn geen openstaande uren om in te dienen.' });
+      }
 
       const { error: opmerkingError } = await context.locals.supabase
         .from('month_submissions')

@@ -83,8 +83,9 @@ const deleteResult = Astro.getActionResult(actions.hours.delete);
           id="opmerking"
           name="opmerking"
           rows="2"
+          disabled={!heeftConcepten}
           placeholder="Bv. toelichting bij afwijkende uren deze maand"
-          class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-gold focus:outline-none"
+          class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-gold focus:outline-none disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
           >{bestaandeOpmerking}</textarea
         >
         <div>
