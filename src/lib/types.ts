@@ -46,6 +46,15 @@ export interface HourEntryWithAmount extends HourEntry {
   bedrag: number | null;
 }
 
+export interface MonthSubmission {
+  id: string;
+  profile_id: string;
+  maand: string;
+  opmerking: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface ExtraPayment {
   id: string;
   profile_id: string;

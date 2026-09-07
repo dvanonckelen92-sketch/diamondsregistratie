@@ -1,7 +1,7 @@
 ---
 import { actions } from 'astro:actions';
 import AppShell from '../../components/AppShell.astro';
-import type { Category, HourEntryWithAmount } from '../../lib/types';
+import type { Category, HourEntryWithAmount, MonthSubmission } from '../../lib/types';
 import {
   formatEuro,
   formatDatum,
@@ -18,7 +18,7 @@ const profile = Astro.locals.profile!;
 const maand = Astro.url.searchParams.get('maand') ?? huidigeMaand();
 const { start, eind } = maandBereik(maand);
 
-const [{ data: entries }, { data: categories }] = await Promise.all([
+const [{ data: entries }, { data: categories }, { data: maandOpmerking }] = await Promise.all([
   supabase
     .from('hour_entries_with_amount')
     .select('*')
@@ -26,12 +26,19 @@ const [{ data: entries }, { data: categories }] = await Promise.all([
     .gte('datum', start)
     .lt('datum', eind)
     .order('datum', { ascending: false }),
-  supabase.from('categories').select('*').order('naam')
+  supabase.from('categories').select('*').order('naam'),
+  supabase
+    .from('month_submissions')
+    .select('*')
+    .eq('profile_id', profile.id)
+    .eq('maand', maand)
+    .maybeSingle()
 ]);
 
 const categoryMap = new Map((categories as Category[] | null ?? []).map((c) => [c.id, c.naam]));
 const rows = (entries as HourEntryWithAmount[] | null) ?? [];
 const heeftConcepten = rows.some((r) => r.status === 'concept');
+const bestaandeOpmerking = (maandOpmerking as MonthSubmission | null)?.opmerking ?? '';
 
 const submitResult = Astro.getActionResult(actions.hours.submitMonth);
 const deleteResult = Astro.getActionResult(actions.hours.delete);
@@ -50,28 +57,51 @@ const deleteResult = Astro.getActionResult(actions.hours.delete);
         class="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
       />
     </form>
-    <div class="flex gap-2">
-      <a
-        href="/mijn-uren/nieuw"
-        class="rounded-md bg-brand-red px-3 py-2 text-sm font-medium text-white hover:bg-brand-red-dark"
-      >
-        Uren toevoegen
-      </a>
-      <form method="POST" action={actions.hours.submitMonth}>
-        <input type="hidden" name="maand" value={maand} />
-        <button
-          type="submit"
-          disabled={!heeftConcepten}
-          class="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 enabled:hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          Uren indienen
-        </button>
-      </form>
-    </div>
+    <a
+      href="/mijn-uren/nieuw"
+      class="rounded-md bg-brand-red px-3 py-2 text-sm font-medium text-white hover:bg-brand-red-dark"
+    >
+      Uren toevoegen
+    </a>
   </div>
 
   {submitResult?.error && <p class="mb-4 text-sm text-red-600">{submitResult.error.message}</p>}
   {deleteResult?.error && <p class="mb-4 text-sm text-red-600">{deleteResult.error.message}</p>}
+
+  {
+    rows.length > 0 && (
+      <form
+        method="POST"
+        action={actions.hours.submitMonth}
+        class="mb-4 flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-3"
+      >
+        <input type="hidden" name="maand" value={maand} />
+        <label for="opmerking" class="text-sm font-medium text-slate-700">
+          Opmerking bij indiening (optioneel)
+        </label>
+        <textarea
+          id="opmerking"
+          name="opmerking"
+          rows="2"
+          placeholder="Bv. toelichting bij afwijkende uren deze maand"
+          class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-gold focus:outline-none"
+          >{bestaandeOpmerking}</textarea
+        >
+        <div>
+          <button
+            type="submit"
+            disabled={!heeftConcepten}
+            class="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 enabled:hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Uren indienen
+          </button>
+          {!heeftConcepten && bestaandeOpmerking && (
+            <span class="ml-2 text-xs text-slate-500">Al ingediend voor deze maand</span>
+          )}
+        </div>
+      </form>
+    )
+  }
 
   {
     rows.length === 0 ? (

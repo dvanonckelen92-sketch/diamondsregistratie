@@ -84,8 +84,11 @@ export const hours = {
 
   submitMonth: defineAction({
     accept: 'form',
-    input: z.object({ maand: z.string().regex(/^\d{4}-\d{2}$/) }),
-    handler: async ({ maand }, context) => {
+    input: z.object({
+      maand: z.string().regex(/^\d{4}-\d{2}$/),
+      opmerking: z.string().optional()
+    }),
+    handler: async ({ maand, opmerking }, context) => {
       const user = requireUser(context);
       const start = `${maand}-01`;
       const [jaar, m] = maand.split('-').map(Number);
@@ -99,6 +102,15 @@ export const hours = {
         .gte('datum', start)
         .lt('datum', eind);
       if (error) throw new ActionError({ code: 'BAD_REQUEST', message: error.message });
+
+      const { error: opmerkingError } = await context.locals.supabase
+        .from('month_submissions')
+        .upsert(
+          { profile_id: user.id, maand, opmerking: opmerking || null },
+          { onConflict: 'profile_id,maand' }
+        );
+      if (opmerkingError) throw new ActionError({ code: 'BAD_REQUEST', message: opmerkingError.message });
+
       return { success: true };
     }
   })

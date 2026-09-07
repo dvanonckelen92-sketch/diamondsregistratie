@@ -1,7 +1,7 @@
 ---
 import AppShell from '../../components/AppShell.astro';
 import AdminEntriesTable, { type AdminEntryRow } from '../../components/AdminEntriesTable';
-import type { Category, HourEntryWithAmount, Profile } from '../../lib/types';
+import type { Category, HourEntryWithAmount, MonthSubmission, Profile } from '../../lib/types';
 import { huidigeMaand, maandBereik } from '../../lib/format';
 
 const supabase = Astro.locals.supabase;
@@ -10,14 +10,20 @@ const profile = Astro.locals.profile!;
 const maand = Astro.url.searchParams.get('maand') ?? huidigeMaand();
 const { start, eind } = maandBereik(maand);
 
-const [{ data: entries }, { data: profiles }, { data: categories }] = await Promise.all([
+const [{ data: entries }, { data: profiles }, { data: categories }, { data: opmerkingen }] = await Promise.all([
   supabase.from('hour_entries_with_amount').select('*').gte('datum', start).lt('datum', eind),
   supabase.from('profiles').select('*'),
-  supabase.from('categories').select('*')
+  supabase.from('categories').select('*'),
+  supabase.from('month_submissions').select('*').eq('maand', maand).not('opmerking', 'is', null)
 ]);
 
 const profileMap = new Map((profiles as Profile[] | null ?? []).map((p) => [p.id, p.naam]));
 const categoryMap = new Map((categories as Category[] | null ?? []).map((c) => [c.id, c.naam]));
+
+const opmerkingenRijen = ((opmerkingen as MonthSubmission[] | null) ?? [])
+  .filter((o) => o.opmerking && o.opmerking.trim() !== '')
+  .map((o) => ({ jufNaam: profileMap.get(o.profile_id) ?? 'Onbekend', opmerking: o.opmerking! }))
+  .sort((a, b) => a.jufNaam.localeCompare(b.jufNaam));
 
 const rows: AdminEntryRow[] = ((entries as HourEntryWithAmount[] | null) ?? []).map((e) => ({
   id: e.id,
@@ -46,4 +52,30 @@ const rows: AdminEntryRow[] = ((entries as HourEntryWithAmount[] | null) ?? []).
   </form>
 
   <AdminEntriesTable client:load initialRows={rows} />
+
+  {
+    opmerkingenRijen.length > 0 && (
+      <div class="mt-4">
+        <h2 class="mb-2 text-sm font-semibold text-slate-700">Opmerkingen bij indiening</h2>
+        <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+          <table class="w-full text-sm">
+            <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
+              <tr>
+                <th class="px-3 py-2">Juf</th>
+                <th class="px-3 py-2">Opmerking</th>
+              </tr>
+            </thead>
+            <tbody>
+              {opmerkingenRijen.map((o) => (
+                <tr class="border-t border-slate-100">
+                  <td class="whitespace-nowrap px-3 py-2 align-top">{o.jufNaam}</td>
+                  <td class="px-3 py-2">{o.opmerking}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )
+  }
 </AppShell>
