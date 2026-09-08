@@ -51,6 +51,7 @@ export interface MonthSubmission {
   profile_id: string;
   maand: string;
   opmerking: string | null;
+  locked_at: string | null;
   created_at: string;
   updated_at: string;
 }

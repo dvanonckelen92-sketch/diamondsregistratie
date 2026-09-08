@@ -38,6 +38,7 @@ const [{ data: entries }, { data: categories }, { data: maandOpmerking }] = awai
 const categoryMap = new Map((categories as Category[] | null ?? []).map((c) => [c.id, c.naam]));
 const rows = (entries as HourEntryWithAmount[] | null) ?? [];
 const heeftConcepten = rows.some((r) => r.status === 'concept');
+const isVergrendeld = !!(maandOpmerking as MonthSubmission | null)?.locked_at;
 const bestaandeOpmerking = (maandOpmerking as MonthSubmission | null)?.opmerking ?? '';
 
 const submitResult = Astro.getActionResult(actions.hours.submitMonth);
@@ -57,50 +58,71 @@ const deleteResult = Astro.getActionResult(actions.hours.delete);
         class="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
       />
     </form>
-    <a
-      href="/mijn-uren/nieuw"
-      class="rounded-md bg-brand-red px-3 py-2 text-sm font-medium text-white hover:bg-brand-red-dark"
-    >
-      Uren toevoegen
-    </a>
+    {
+      isVergrendeld ? (
+        <span
+          class="cursor-not-allowed rounded-md bg-slate-200 px-3 py-2 text-sm font-medium text-slate-400"
+          title="Deze maand is al ingediend"
+        >
+          Uren toevoegen
+        </span>
+      ) : (
+        <a
+          href="/mijn-uren/nieuw"
+          class="rounded-md bg-brand-red px-3 py-2 text-sm font-medium text-white hover:bg-brand-red-dark"
+        >
+          Uren toevoegen
+        </a>
+      )
+    }
   </div>
 
   {submitResult?.error && <p class="mb-4 text-sm text-red-600">{submitResult.error.message}</p>}
   {deleteResult?.error && <p class="mb-4 text-sm text-red-600">{deleteResult.error.message}</p>}
 
   {
-    rows.length > 0 && (
-      <form
-        method="POST"
-        action={actions.hours.submitMonth}
-        class="mb-4 flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-3"
-      >
-        <input type="hidden" name="maand" value={maand} />
-        <label for="opmerking" class="text-sm font-medium text-slate-700">
-          Opmerking bij indiening (optioneel)
-        </label>
-        <textarea
-          id="opmerking"
-          name="opmerking"
-          rows="2"
-          disabled={!heeftConcepten}
-          placeholder="Bv. toelichting bij afwijkende uren deze maand"
-          class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-gold focus:outline-none disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
-          >{bestaandeOpmerking}</textarea
+    isVergrendeld ? (
+      <div class="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
+        Je hebt de uren voor deze maand al ingediend.
+        {bestaandeOpmerking && (
+          <>
+            {' '}
+            Jouw opmerking: <span class="italic">{bestaandeOpmerking}</span>
+          </>
+        )}
+        {' '}Neem contact op met de beheerder als je nog iets moet wijzigen.
+      </div>
+    ) : (
+      rows.length > 0 && (
+        <form
+          method="POST"
+          action={actions.hours.submitMonth}
+          class="mb-4 flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-3"
         >
-        <div>
-          <button
-            type="submit"
+          <input type="hidden" name="maand" value={maand} />
+          <label for="opmerking" class="text-sm font-medium text-slate-700">
+            Opmerking bij indiening (optioneel)
+          </label>
+          <textarea
+            id="opmerking"
+            name="opmerking"
+            rows="2"
             disabled={!heeftConcepten}
-            class="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 enabled:hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+            placeholder="Bv. toelichting bij afwijkende uren deze maand"
+            class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-gold focus:outline-none disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500"
+            >{bestaandeOpmerking}</textarea
           >
-            Uren indienen
-          </button>
-          {!heeftConcepten && bestaandeOpmerking && (
-            <span class="ml-2 text-xs text-slate-500">Al ingediend voor deze maand</span>
-          )}
-        </div>
-      </form>
+          <div>
+            <button
+              type="submit"
+              disabled={!heeftConcepten}
+              class="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 enabled:hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Uren indienen
+            </button>
+          </div>
+        </form>
+      )
     )
   }
 

@@ -1,4 +1,5 @@
 ---
+import { actions } from 'astro:actions';
 import AppShell from '../../components/AppShell.astro';
 import AdminEntriesTable, { type AdminEntryRow } from '../../components/AdminEntriesTable';
 import type { Category, HourEntryWithAmount, MonthSubmission, Profile } from '../../lib/types';
@@ -10,19 +11,28 @@ const profile = Astro.locals.profile!;
 const maand = Astro.url.searchParams.get('maand') ?? huidigeMaand();
 const { start, eind } = maandBereik(maand);
 
-const [{ data: entries }, { data: profiles }, { data: categories }, { data: opmerkingen }] = await Promise.all([
+const reopenResult = Astro.getActionResult(actions.admin.reopenMonth);
+
+const [{ data: entries }, { data: profiles }, { data: categories }, { data: submissions }] = await Promise.all([
   supabase.from('hour_entries_with_amount').select('*').gte('datum', start).lt('datum', eind),
   supabase.from('profiles').select('*'),
   supabase.from('categories').select('*'),
-  supabase.from('month_submissions').select('*').eq('maand', maand).not('opmerking', 'is', null)
+  supabase.from('month_submissions').select('*').eq('maand', maand)
 ]);
 
 const profileMap = new Map((profiles as Profile[] | null ?? []).map((p) => [p.id, p.naam]));
 const categoryMap = new Map((categories as Category[] | null ?? []).map((c) => [c.id, c.naam]));
 
-const opmerkingenRijen = ((opmerkingen as MonthSubmission[] | null) ?? [])
+const submissionRows = (submissions as MonthSubmission[] | null) ?? [];
+
+const opmerkingenRijen = submissionRows
   .filter((o) => o.opmerking && o.opmerking.trim() !== '')
   .map((o) => ({ jufNaam: profileMap.get(o.profile_id) ?? 'Onbekend', opmerking: o.opmerking! }))
+  .sort((a, b) => a.jufNaam.localeCompare(b.jufNaam));
+
+const ingediendeRijen = submissionRows
+  .filter((s) => s.locked_at)
+  .map((s) => ({ profileId: s.profile_id, jufNaam: profileMap.get(s.profile_id) ?? 'Onbekend' }))
   .sort((a, b) => a.jufNaam.localeCompare(b.jufNaam));
 
 const rows: AdminEntryRow[] = ((entries as HourEntryWithAmount[] | null) ?? []).map((e) => ({
@@ -51,7 +61,43 @@ const rows: AdminEntryRow[] = ((entries as HourEntryWithAmount[] | null) ?? []).
     />
   </form>
 
+  {reopenResult?.error && <p class="mb-4 text-sm text-red-600">{reopenResult.error.message}</p>}
+
   <AdminEntriesTable client:load initialRows={rows} />
+
+  {
+    ingediendeRijen.length > 0 && (
+      <div class="mt-4">
+        <h2 class="mb-2 text-sm font-semibold text-slate-700">Ingediende maanden</h2>
+        <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+          <table class="w-full text-sm">
+            <thead class="bg-slate-50 text-left text-xs uppercase text-slate-500">
+              <tr>
+                <th class="px-3 py-2">Juf</th>
+                <th class="px-3 py-2" />
+              </tr>
+            </thead>
+            <tbody>
+              {ingediendeRijen.map((r) => (
+                <tr class="border-t border-slate-100">
+                  <td class="whitespace-nowrap px-3 py-2 align-middle">{r.jufNaam}</td>
+                  <td class="px-3 py-2 text-right">
+                    <form method="POST" action={actions.admin.reopenMonth}>
+                      <input type="hidden" name="profileId" value={r.profileId} />
+                      <input type="hidden" name="maand" value={maand} />
+                      <button type="submit" class="text-sm text-brand-red hover:text-brand-red-dark">
+                        Maand terug openzetten
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )
+  }
 
   {
     opmerkingenRijen.length > 0 && (

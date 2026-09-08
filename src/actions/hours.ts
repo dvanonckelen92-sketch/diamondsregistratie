@@ -23,6 +23,22 @@ function naarDecimaalUren(uren: number, minuten: number): number {
   return totaal;
 }
 
+async function checkMaandNietVergrendeld(context: { locals: App.Locals }, profileId: string, maand: string) {
+  const { data, error } = await context.locals.supabase
+    .from('month_submissions')
+    .select('locked_at')
+    .eq('profile_id', profileId)
+    .eq('maand', maand)
+    .maybeSingle();
+  if (error) throw new ActionError({ code: 'BAD_REQUEST', message: error.message });
+  if (data?.locked_at) {
+    throw new ActionError({
+      code: 'CONFLICT',
+      message: 'Deze maand is al ingediend en afgesloten. Vraag de beheerder om ze terug open te zetten.'
+    });
+  }
+}
+
 export const hours = {
   create: defineAction({
     accept: 'form',
@@ -34,6 +50,7 @@ export const hours = {
     }),
     handler: async ({ datum, categoryId, uren, minuten, opmerking }, context) => {
       const user = requireUser(context);
+      await checkMaandNietVergrendeld(context, user.id, datum.slice(0, 7));
       const { error } = await context.locals.supabase.from('hour_entries').insert({
         profile_id: user.id,
         category_id: categoryId,
@@ -90,6 +107,8 @@ export const hours = {
     }),
     handler: async ({ maand, opmerking }, context) => {
       const user = requireUser(context);
+      await checkMaandNietVergrendeld(context, user.id, maand);
+
       const start = `${maand}-01`;
       const [jaar, m] = maand.split('-').map(Number);
       const eind = new Date(Date.UTC(jaar, m, 1)).toISOString().slice(0, 10);
@@ -104,17 +123,16 @@ export const hours = {
         .select('id');
       if (error) throw new ActionError({ code: 'BAD_REQUEST', message: error.message });
 
-      // Enkel bij een effectieve indiening mag de opmerking (opnieuw) worden vastgelegd —
-      // anders zou iemand de opmerking van een reeds ingediende maand alsnog kunnen
-      // wijzigen door de actie manueel opnieuw aan te roepen nadat de knop al disabled is.
       if (bijgewerkt.length === 0) {
         throw new ActionError({ code: 'BAD_REQUEST', message: 'Er zijn geen openstaande uren om in te dienen.' });
       }
 
+      // Vergrendel de maand meteen bij indiening: een juf kan maar 1x per maand
+      // indienen. Enkel de beheerder kan dit terugzetten (admin.reopenMonth).
       const { error: opmerkingError } = await context.locals.supabase
         .from('month_submissions')
         .upsert(
-          { profile_id: user.id, maand, opmerking: opmerking || null },
+          { profile_id: user.id, maand, opmerking: opmerking || null, locked_at: new Date().toISOString() },
           { onConflict: 'profile_id,maand' }
         );
       if (opmerkingError) throw new ActionError({ code: 'BAD_REQUEST', message: opmerkingError.message });

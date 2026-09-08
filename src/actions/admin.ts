@@ -169,6 +169,40 @@ export const admin = {
     }
   }),
 
+  reopenMonth: defineAction({
+    accept: 'form',
+    input: z.object({
+      profileId: z.string().uuid(),
+      maand: z.string().regex(/^\d{4}-\d{2}$/)
+    }),
+    handler: async ({ profileId, maand }, context) => {
+      requireAdmin(context);
+      const start = `${maand}-01`;
+      const [jaar, m] = maand.split('-').map(Number);
+      const eind = new Date(Date.UTC(jaar, m, 1)).toISOString().slice(0, 10);
+
+      // Zet enkel de nog niet goedgekeurde/betaalde uren terug naar concept,
+      // zodat de juf ze weer kan bewerken en opnieuw indienen.
+      const { error: entriesError } = await context.locals.supabase
+        .from('hour_entries')
+        .update({ status: 'concept' })
+        .eq('profile_id', profileId)
+        .eq('status', 'ingediend')
+        .gte('datum', start)
+        .lt('datum', eind);
+      if (entriesError) throw new ActionError({ code: 'BAD_REQUEST', message: entriesError.message });
+
+      const { error: lockError } = await context.locals.supabase
+        .from('month_submissions')
+        .update({ locked_at: null })
+        .eq('profile_id', profileId)
+        .eq('maand', maand);
+      if (lockError) throw new ActionError({ code: 'BAD_REQUEST', message: lockError.message });
+
+      return { success: true };
+    }
+  }),
+
   markExtraPaid: defineAction({
     accept: 'form',
     input: z.object({ ids: z.array(z.string().uuid()).min(1) }),
